@@ -1,0 +1,14 @@
+{
+    "name": "nyannboom",
+    "version": "0.0.1",
+    "devDependencies": {
+        "grunt": "^0.4.0",
+        "grunt-browserify": "^6.0.0",
+        "grunt-contrib-copy": "^1.0.0",
+        "grunt-contrib-watch": "^1.1.0",
+        "grunt-zip": "^0.20.0"
+    },
+    "dependencies": {
+        "rgbquant": "^1.1.2"
+    }
+}

@@ -88,19 +88,23 @@ class PixelArt {
         const imageRatio = this.image.width / this.image.height;
         const canvasRatio = this.canvas.width / this.canvas.height;
         if (imageRatio > canvasRatio) {
-            return this.canvas.width;
+            return {
+                width: this.canvas.width,
+                height: this.canvas.width / imageRatio
+            }
         } else {
-            return this.canvas.height;
+            return {
+                width: this.canvas.height * imageRatio,
+                height: this.canvas.height
+            }
         }
     }
 
     get imageSize() {
         const largestDimension = this.largestDimension;
-        const width = this.image.width / this.image.height * largestDimension;
-        const height = this.image.height / this.image.width * largestDimension;
         return {
-            width: width*this.camera.zoom,
-            height: height*this.camera.zoom
+            width: largestDimension.width * this.camera.zoom,
+            height: largestDimension.height * this.camera.zoom
         }
     }
 
@@ -113,7 +117,7 @@ class PixelArt {
     }
 
     get pixelSize() {
-        return this.largestDimension / this.image.width;
+        return this.sizeModifier * this.camera.zoom;
     }
 
     draw() {
@@ -366,17 +370,16 @@ class PixelArt {
         this.colorPalette = imageData.colorPalette;
     }
 
-
-
     mouseMoveEvnt(event) {
         const rect = this.canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-        const pixelX = Math.floor((x - this.xOffset) / this.pixelSize/this.camera.zoom);
-        const pixelY = Math.floor((y - this.yOffset) / this.pixelSize/this.camera.zoom);
+        const pixelSize = this.imageSize.width / this.pixels[0].length;
+        const pixelX = Math.floor((x - this.xOffset) / pixelSize);
+        const pixelY = Math.floor((y - this.yOffset) / pixelSize);
+        console.log(y - this.yOffset, x - this.xOffset)
         if (pixelX < 0 || pixelY < 0 || pixelX >= this.pixels[0].length || pixelY >= this.pixels.length) return;
         const pixel = this.pixels[pixelY][pixelX];
-        const bufferPixelSize = this.buffer.width / this.pixels[0].length;
         if (!this.mouseDown || pixel.active || pixel.colorID != this.colorMap[this.selectedColor]) return;
         pixel.active = true;
         this.unsavedPixels++;

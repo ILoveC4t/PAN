@@ -113,21 +113,26 @@
     height: 5vw;
     margin: auto;
     border-radius: 25%;
-    color: white;
+    background-color: rgb(255, 187, 62);
     font-size: 2vw;
     border: 0.5vw;
     border-style: solid;
     border-color: black;
     position: relative;
-    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+}
+
+.tool:hover {
+    cursor: pointer;
+    background-color: rgb(255, 217, 135);
 }
 
 .progress {
     width: 100%;
-    height: 100%;
+    height: 0%;
     display: flex;
     align-self: flex-end;
     justify-content: center;

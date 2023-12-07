@@ -30,14 +30,15 @@ class Pixel {
 }
 
 class PixelArt {
-
     unsavedPixels = 0;
 
-    canEarn = true;
-    savedPoints = 0
-    maxPoints = 250
-    
+    score = {
+        canEarn: true,
+        points: 0,
+        maxPoints: 250
+    }
     selectedTool = "pen"
+    tools = {}
 
     sizeModifier= 25
     pixels = [];
@@ -84,21 +85,21 @@ class PixelArt {
             brush: document.getElementById("brush")
         }
         this.tools.pen.onclick = () => {
-            this.selectedTool = "pen";
+            this.switchTool("pen");
         }
         this.tools.bucket.onclick = () => {
-            if (this.savedPoints < this.maxPoints) return;
-            this.selectedTool = "bucket";
-            this.savedPoints = 0;
+            if (this.score.points < (this.score.maxPoints/2)) return;
+            this.switchTool("bucket");
+            this.score.points -= this.score.maxPoints/2;
         }
         this.brushProgress = document.getElementById("brush-progress");
         this.tools.brush.onclick = () => {
-            if (this.savedPoints < this.maxPoints) return;
-            this.selectedTool = "brush";
+            if (this.score.points < this.score.maxPoints) return;
+            this.switchTool("brush");
             this.brushLoop();
         }
         this.tools.eraser.onclick = () => {
-            this.selectedTool = "eraser";
+            this.switchTool("eraser");
         }
         this.image = img;
         this.src = img.src
@@ -107,6 +108,7 @@ class PixelArt {
         this._scanColorPalette();
         this._prepBuffer();
         this._registerColorPalette();
+        this.switchTool("pen");
         this.ready = true;
         this.draw();
         this.registerEvents();
@@ -152,6 +154,17 @@ class PixelArt {
         return this.sizeModifier * this.camera.zoom;
     }
 
+    switchTool(tool) {
+        this.selectedTool = tool;
+        for (const toolName in this.tools) {
+            if (toolName == tool) {
+                this.tools[toolName].style.backgroundColor = "orange";
+            } else {
+                this.tools[toolName].style.backgroundColor = "rgb(255, 187, 62)";
+            }
+        }
+    }
+
     draw() {
         if (!this.ready) return;
         this.ctx.fillStyle = "white";
@@ -163,9 +176,9 @@ class PixelArt {
         this.draw();
         this.mvUpdate();
         this.mouseUpdate();
-        let progress = this.savedPoints / this.maxPoints * 100;
+        let progress = this.score.points / this.score.maxPoints * 100;
         if (progress == NaN) progress = 0;
-        this.bucketProgress.style.height = progress + "%";
+        this.bucketProgress.style.height = progress*2 + "%";
         this.brushProgress.style.height = progress + "%";
     }
 
@@ -413,7 +426,7 @@ class PixelArt {
         const imageData = {
             pixels: activePixels,
             colorPalette: this.colorPalette,
-            points: this.savedPoints
+            points: this.score.points
         }
         this.saveData[this.worldId][this.levelId] = imageData;
         localStorage.setItem("savedata", JSON.stringify(this.saveData));
@@ -430,7 +443,7 @@ class PixelArt {
             this.pixels[pixel.y][pixel.x].active = true;
         }
         this.colorPalette = imageData.colorPalette;
-        this.savedPoints = imageData.points || 0;
+        this.score.points = imageData.points || 0;
         this.unsavedPixels = 0;
     }
 
@@ -465,7 +478,7 @@ class PixelArt {
         if (!pixel.active && pixel.colorID == this.colorMap[this.selectedColor]) {
             pixel.active = true;
             this._setBufferPixel(x, y, pixel);
-            if (this.canEarn && this.savedPoints < this.maxPoints) this.savedPoints++;
+            if (this.score.canEarn && this.score.points < this.score.maxPoints) this.score.points++;
             if (this.unsavedPixels < 10) this.unsavedPixels++;
             else this._save_data();
         }
@@ -480,7 +493,7 @@ class PixelArt {
                 if (pixel && !pixel.active && pixel.colorID == this.colorMap[this.selectedColor]) {
                     pixel.active = true;
                     this._setBufferPixel(x+brushX, y+brushY, pixel);
-                    if (this.canEarn && this.savedPoints < this.maxPoints) this.savedPoints++;
+                    if (this.score.canEarn && this.score.points < this.score.maxPoints) this.score.points++;
                     if (this.unsavedPixels < 10) this.unsavedPixels++;
                 }
             }
@@ -490,17 +503,17 @@ class PixelArt {
 
     brushLoop(interval) {
         if (!interval) {
-            this.canEarn = false;
+            this.score.canEarn = false;
             const newInterval = setInterval(() => {
                 this.brushLoop(newInterval);
-            }, 1000 / 20);
+            }, 1000 / 5);
             return
         }
-        this.savedPoints -= this.maxPoints / 100;
-        if (this.savedPoints < 0) this.savedPoints = 0;
-        if (this.savedPoints == 0) {
-            this.selectedTool = "pen";
-            this.canEarn = true;
+        this.score.points -= this.score.maxPoints / 100;
+        if (this.score.points < 0) this.score.points = 0;
+        if (this.score.points == 0) {
+            this.switchTool("pen");
+            this.score.canEarn = true;
             clearInterval(interval);
         }
     }
@@ -510,7 +523,7 @@ class PixelArt {
         if (pixel && pixel.colorID == colorID && !pixel.active) {
             pixel.active = true;
             this._setBufferPixel(x, y, pixel);
-            if (this.canEarn && this.savedPoints < this.maxPoints) this.savedPoints++;
+            if (this.score.canEarn && this.score.points < this.score.maxPoints) this.score.points++;
             if (this.unsavedPixels < 10) this.unsavedPixels++;
             else this._save_data();
             this._bucketCrawler(x+1, y, colorID);
@@ -522,10 +535,10 @@ class PixelArt {
 
     bucketTool(x, y) {
         const colorID = this.pixels[y][x].colorID;
-        this.canEarn = false;
+        this.score.canEarn = false;
         this._bucketCrawler(x, y, colorID);
-        this.canEarn = true;
-        this.selectedTool = "pen";
+        this.score.canEarn = true;
+        this.switchTool("pen");
     }
 
     eraserTool(x, y) {
@@ -533,7 +546,7 @@ class PixelArt {
         if (pixel.active) {
             pixel.active = false;
             this._setBufferPixel(x, y, pixel);
-            if (this.canEarn && this.savedPoints < this.maxPoints) this.savedPoints--;
+            if (this.score.canEarn && this.score.points < this.score.maxPoints) this.score.points--;
             if (this.unsavedPixels < 10) this.unsavedPixels++;
             else this._save_data();
         }

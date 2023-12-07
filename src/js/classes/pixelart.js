@@ -353,7 +353,6 @@ class PixelArt {
             colorPalette: this.colorPalette
         }
         this.saveData[this.worldId][this.levelId] = imageData;
-        console.log(this.saveData)
         localStorage.setItem("savedata", JSON.stringify(this.saveData));
     }
 
@@ -377,7 +376,6 @@ class PixelArt {
         const pixelSize = this.imageSize.width / this.pixels[0].length;
         const pixelX = Math.floor((x - this.xOffset) / pixelSize);
         const pixelY = Math.floor((y - this.yOffset) / pixelSize);
-        console.log(y - this.yOffset, x - this.xOffset)
         if (pixelX < 0 || pixelY < 0 || pixelX >= this.pixels[0].length || pixelY >= this.pixels.length) return;
         const pixel = this.pixels[pixelY][pixelX];
         if (!this.mouseDown || pixel.active || pixel.colorID != this.colorMap[this.selectedColor]) return;

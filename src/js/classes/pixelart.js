@@ -30,7 +30,8 @@ class Pixel {
 }
 
 class PixelArt {
-    
+    unsavedPixels = 0;
+    sizeModifier= 25
     pixels = [];
     camera = {
         x: 0,
@@ -72,6 +73,7 @@ class PixelArt {
         this._extract_pixels();
         this._load_save_data();
         this._scanColorPalette();
+        this._prepBuffer();
         this._registerColorPalette();
         this.ready = true;
         this.draw();
@@ -80,15 +82,6 @@ class PixelArt {
         setInterval(() => {
             this.logic();
         }, 1000 / 60);
-    }
-
-    finishLoad() {
-        this._extract_pixels();
-        this._scanColorPalette();
-        this._registerColorPalette();
-        this.ready = true;
-        this.draw();
-        this.registerEvents();
     }
 
     get largestDimension() {
@@ -101,62 +94,33 @@ class PixelArt {
         }
     }
 
-    get pixelSize() {
-        return this.largestDimension / this.pixels.length * this.camera.zoom;
-    }
-
     get imageSize() {
-        const imageWidth = this.pixels[0].length * this.pixelSize;
-        const imageHeight = this.pixels.length * this.pixelSize;
-
+        const largestDimension = this.largestDimension;
+        const width = this.image.width / this.image.height * largestDimension;
+        const height = this.image.height / this.image.width * largestDimension;
         return {
-            width: imageWidth,
-            height: imageHeight
+            width: width*this.camera.zoom,
+            height: height*this.camera.zoom
         }
     }
 
     get xOffset() {
-        return (this.canvas.width - this.imageSize.width) / 2 + this.camera.x;
+        return this.camera.x + this.canvas.width / 2 - this.imageSize.width / 2;
     }
 
     get yOffset() {
-        return (this.canvas.height - this.imageSize.height) / 2 - this.camera.y;
+        return this.camera.y + this.canvas.height / 2 - this.imageSize.height / 2;
+    }
+
+    get pixelSize() {
+        return this.largestDimension / this.image.width;
     }
 
     draw() {
         if (!this.ready) return;
-
-        const ctx = this.ctx;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        const pixelSize = this.pixelSize;
-        const xOffset = this.xOffset;
-        const yOffset = this.yOffset;
-
-        for (let y = 0; y < this.pixels.length; y++) {
-            for (let x = 0; x < this.pixels[y].length; x++) {
-                const pixel = this.pixels[y][x];
-                const targetX = x * pixelSize + xOffset;
-                const targetY = y * pixelSize + yOffset;
-
-                if (targetX < -pixelSize || targetX > this.canvas.width) continue;
-                if (targetY < -pixelSize || targetY > this.canvas.height) continue;
-
-                if (!pixel.active) {
-                    ctx.fillStyle = "white";
-                    ctx.fillRect(targetX, targetY, pixelSize, pixelSize);
-                    ctx.fillStyle = "black";
-                    ctx.font = `${this.pixelSize*0.5}px Arial`;
-                    ctx.fillText(pixel.colorID, targetX + pixelSize / 2, targetY + pixelSize / 2);
-                    ctx.fillStyle = "white";
-                    continue;
-                }
-                ctx.fillStyle = pixel.elementString;
-                ctx.fillRect(targetX, targetY, pixelSize, pixelSize);
-            }
-        }
+        this.ctx.fillStyle = "white";
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.drawImage(this.buffer, this.xOffset, this.yOffset, this.imageSize.width, this.imageSize.height);
     }
 
     logic() {
@@ -170,33 +134,21 @@ class PixelArt {
     }
 
     chngZoom(zoomOffset) {
+        const xratio = this.camera.x / this.imageSize.width;
+        const yratio = this.camera.y / this.imageSize.height;
         if (this.camera.zoom + zoomOffset < 0.7) {
             this.camera.zoom = 0.7
             return
         }
         this.camera.zoom += zoomOffset;
+        this.camera.x = xratio * this.imageSize.width;
+        this.camera.y = yratio * this.imageSize.height;
     }
 
     mouseWheelEvnt(event) {
-        const zoomOffset = event.deltaY / 1000;
+        let zoomOffset = event.deltaY / 1000;
+        zoomOffset = zoomOffset * this.camera.zoom;
         this.chngZoom(zoomOffset);
-    }
-
-    mouseMoveEvnt(event) {
-        this.mousePos = this._get_mouse_pos(event);
-        if (this.mouseDown) {
-            const mousePos = this._mouse_pos_to_pixel(this.mousePos);
-            if (mousePos.y < 0 || mousePos.y >= this.pixels.length) return;
-            if (mousePos.x < 0 || mousePos.x >= this.pixels[0].length) return;
-            const pixel = this.pixels[mousePos.y][mousePos.x];
-            const pixelColorID = pixel.colorID;
-            const colorID = this.colorMap[this.selectedColor];
-            if (pixelColorID != colorID) return;
-            console.log(pixelColorID, colorID)
-            pixel.active = true;
-            this.pixels[mousePos.y][mousePos.x] = pixel;
-            this._save_data();
-        }
     }
 
     mouseDownEvnt() {
@@ -250,28 +202,57 @@ class PixelArt {
     }
 
     mvUpdate() {
+        const step = this.camera.moveOffset * this.camera.zoom;
         for (const key in this.pressedKeys) {
             if (this.pressedKeys[key]) {
-                const step = this.camera.moveOffset * 25;
                 switch (key) {
                     case "s":
-                        if (this.yOffset + this.imageSize.height - step <= 0) break
-                        this.move(0, this.camera.moveOffset);
-                        break;
-                    case "w":
-                        if (this.yOffset - this.canvas.height + step >= 0) break
+                        if (this.camera.y - this.camera.moveOffset < -this.imageSize.height/2) break;
                         this.move(0, -this.camera.moveOffset);
                         break;
+                    case "w":
+                        if (this.camera.y + this.camera.moveOffset > this.imageSize.height/2) break;
+                        this.move(0, this.camera.moveOffset);
+                        break;
                     case "d":
-                        if (this.xOffset + this.imageSize.width - step <= 0) break
+                        if (this.camera.x - this.camera.moveOffset < -this.imageSize.width/2) break;
                         this.move(-this.camera.moveOffset, 0);
                         break;
                     case "a":
-                        if (this.xOffset - this.canvas.width + step >= 0) break
+                        if (this.camera.x + this.camera.moveOffset > this.imageSize.width/2) break;
                         this.move(this.camera.moveOffset, 0);
                         break;
                 }
             }
+        }
+    }
+
+    _prepBuffer() {
+        this.buffer = document.createElement("canvas");
+        this.buffer.width = this.image.width*this.sizeModifier;
+        this.buffer.height = this.image.height*this.sizeModifier;
+        this.bufferCtx = this.buffer.getContext("2d");
+        for (let y = 0; y < this.pixels.length; y++) {
+            for (let x = 0; x < this.pixels[y].length; x++) {
+                const pixel = this.pixels[y][x];
+                this._setBufferPixel(x, y, pixel);
+            }
+        }
+    }
+
+    _setBufferPixel(x, y, pixel) {
+        const color = pixel.elementString;
+        this.bufferCtx.fillStyle = color;
+        if (pixel.active) {
+            this.bufferCtx.fillRect(x*this.sizeModifier, y*this.sizeModifier, this.sizeModifier, this.sizeModifier);
+        } else {
+            this.bufferCtx.fillStyle = "white";
+            this.bufferCtx.fillRect(x*this.sizeModifier, y*this.sizeModifier, this.sizeModifier, this.sizeModifier);
+            this.bufferCtx.fillStyle = "black";
+            this.bufferCtx.textAlign = "center";
+            this.bufferCtx.textBaseline = "middle";
+            this.bufferCtx.font = this.sizeModifier*0.8 + "px Arial";
+            this.bufferCtx.fillText(pixel.colorID, x*this.sizeModifier+this.sizeModifier/2, y*this.sizeModifier+this.sizeModifier/2);
         }
     }
 
@@ -385,24 +366,24 @@ class PixelArt {
         this.colorPalette = imageData.colorPalette;
     }
 
-    _get_mouse_pos(event) {
+
+
+    mouseMoveEvnt(event) {
         const rect = this.canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-        return {
-            x: x,
-            y: y
-        }
-    }
-
-    _mouse_pos_to_pixel(pos) {
-        //get corresponding pixel from array
-        const x = Math.floor((pos.x - this.xOffset) / this.pixelSize);
-        const y = Math.floor((pos.y - this.yOffset) / this.pixelSize);
-
-        return {
-            x: x,
-            y: y
+        const pixelX = Math.floor((x - this.xOffset) / this.pixelSize/this.camera.zoom);
+        const pixelY = Math.floor((y - this.yOffset) / this.pixelSize/this.camera.zoom);
+        if (pixelX < 0 || pixelY < 0 || pixelX >= this.pixels[0].length || pixelY >= this.pixels.length) return;
+        const pixel = this.pixels[pixelY][pixelX];
+        const bufferPixelSize = this.buffer.width / this.pixels[0].length;
+        if (!this.mouseDown || pixel.active || pixel.colorID != this.colorMap[this.selectedColor]) return;
+        pixel.active = true;
+        this.unsavedPixels++;
+        this._setBufferPixel(pixelX, pixelY, pixel);
+        if (this.unsavedPixels > 10) {
+            this._save_data();
+            this.unsavedPixels = 0;
         }
     }
 }

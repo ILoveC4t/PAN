@@ -70,7 +70,7 @@
     justify-content: center;
 }
 
-.color-square {
+.color {
     width: 5vw;
     height: 5vw;
     margin: auto;
@@ -85,7 +85,7 @@
     border-color: black;
 }
 
-.color-square:hover {
+.color:hover {
     cursor: pointer;
 }
 
@@ -130,7 +130,7 @@
     background-color: rgb(255, 217, 135);
 }
 
-.progress {
+.tool-progress {
     width: 100%;
     height: 0%;
     display: flex;

@@ -19,6 +19,10 @@ module.exports = function(grunt) {
         src: ['src/js/pages/game/index.js'],
         dest: 'dest/js/game.js',
       },
+      test: {
+        src: ['src/js/pages/test/index.js'],
+        dest: 'dest/js/test.js',
+      },
     },
     copy: {
       main: {
@@ -42,5 +46,5 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
 
   grunt.registerTask('default', ['browserify:menu', 'browserify:game', 'copy', 'zip']);
-  grunt.registerTask('dev', ['browserify:menu', 'browserify:game', 'copy']);
+  grunt.registerTask('dev', ['browserify:menu', 'browserify:game', 'browserify:test', 'copy']);
 };

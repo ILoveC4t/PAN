@@ -1,5 +1,5 @@
 const SaveMngr = require('../../classes/save_mngr.js');
-const PixelArt = require('../../classes/pixelart.js')
+const Game = require('../../classes/game.js')
 
 const Searchparams = new URLSearchParams(window.location.search);
 const worldId = Searchparams.get('world');
@@ -22,8 +22,7 @@ function loadCustomWorld(levelId) {
         window.location.href = 'index.html';
     } else {
         img.img.onload = () => {
-            const canvas = document.getElementById('image');
-            new PixelArt(canvas, img.img, "custom", levelId)
+            new Game(img.img, "custom", levelId)
         }
     }
 }
@@ -38,8 +37,7 @@ function loadStdWorld(worldId, levelId) {
             const img = new Image();
             img.src = 'assets/worlds/' + worldId + '/' + level.img
             img.onload = () => {
-                const canvas = document.getElementById('image');
-                new PixelArt(canvas, img, worldId, levelId)
+                new Game(img, worldId, levelId)
             }
         } else {
             console.log(Error(req.statusText));

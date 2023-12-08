@@ -29,7 +29,6 @@ class Game {
         this.saveData = new SaveData(worldId, levelId);
         this.pixelArt = new PixelArt(img);
         this.camera = new Camera(this.pixelArt.canvas);
-        this.camera.setZoom(2)
         this.inputTracker = new InputTracker(this.inputOptions, this.camera.view);
         this.ui = new UI(this);
         setInterval(() => {
@@ -73,6 +72,16 @@ class Game {
 
         }
         if (this.inputTracker.mouse.scroll != 0) this.camera.changeZoom(this.inputTracker.mouse.scroll/1000);
+    }
+
+    switchTool(toolName) {
+        this.selectedTool.onDeactivate();
+        this.selectedTool = this.tools[toolName];
+        this.selectedTool.onActivate();
+    }
+
+    switchColor(color) {
+        this.selectedColor = color;
     }
 }
 

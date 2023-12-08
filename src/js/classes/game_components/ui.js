@@ -1,4 +1,5 @@
 class UI {
+    _tools = {}
 
     constructor(game) {
         this.game = game;
@@ -16,15 +17,23 @@ class UI {
     }
 
     _setupColorPallete() {
+        let i = 0;
         for (const color of Object.keys(this.game.pixelArt.colorPalette)) {
             const colorButton = document.createElement('a');
             colorButton.classList.add('color');
             colorButton.style.backgroundColor = color;
             colorButton.onclick = () => {
+                this.selectedColor.style.backgroundColor = color;
+                this.selectedColor.innerHTML = colorButton.innerHTML;
                 this.game.switchColor(color);
             }
+            colorButton.innerHTML = i++;
             this.colorPicker.appendChild(colorButton);
         }
+        const firstButton = this.colorPicker.children[0];
+        this.selectedColor.style.backgroundColor = firstButton.style.backgroundColor;
+        this.selectedColor.innerHTML = firstButton.innerHTML;
+        
     }
 
     _setupTools() {
@@ -33,6 +42,8 @@ class UI {
             toolButton.id = tool.name;
             toolButton.classList.add('tool');
             toolButton.onclick = () => {
+                this._tools[this.game.selectedTool.name].classList.remove('selected');
+                toolButton.classList.add('selected');
                 this.game.switchTool(tool.name);
             }
 
@@ -48,12 +59,13 @@ class UI {
             toolButton.appendChild(toolProgress);
 
             this.toolbox.appendChild(toolButton);
+            this._tools[tool.name] = toolButton;
         }
+        this._tools[this.game.selectedTool.name].classList.add('selected');
     }
 
     update() {
         this.game.camera.resize(this.viewContainer.clientWidth, this.viewContainer.clientHeight);
-        this.selectedColor.style.backgroundColor = this.game.selectedColor;
         for (const tool of Object.values(this.game.tools)) {
             const toolProgress = document.getElementById(tool.name + '-progress');
             toolProgress.style.width = tool.progress + '%';

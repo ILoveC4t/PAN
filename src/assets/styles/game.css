@@ -130,6 +130,10 @@
     background-color: rgb(255, 217, 135);
 }
 
+.selected {
+    background-color: rgb(255, 123, 0);
+}
+
 .tool-progress {
     width: 100%;
     height: 0%;

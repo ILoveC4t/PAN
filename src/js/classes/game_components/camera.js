@@ -1,4 +1,3 @@
-//view a canvas with zoom and pan
 class Camera {
     zoom = 1;
     x = 0;
@@ -58,8 +57,8 @@ class Camera {
         const xratio = this.x / this.source.width;
         const yratio = this.y / this.source.height;
         this.zoom += this.zoom * zoom;
-        this.x = xratio * this.source.width;
-        this.y = yratio * this.source.height;
+        this.x = xratio * this.source.width
+        this.y = yratio * this.source.height
     }
 
     move(x, y) {
